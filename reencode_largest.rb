@@ -40,6 +40,8 @@ USE_GPU = ENV.fetch('USE_GPU', 'false').downcase == 'true'
 # Log file path
 LOG_FILE = ENV.fetch('LOG_FILE', '/videos/h265_encoder.log')
 
+NUM_FILES = ENV.fetch('NUM_FILES', '1').to_i
+
 # Create a multi-output logger (logs to both STDOUT and file)
 log_file_writer = File.open(LOG_FILE, 'a')
 log_file_writer.sync = true  # Ensure immediate writes
@@ -225,7 +227,7 @@ end
 # 2. Parse arguments
 # Check if the first argument is a number (count of videos to process)
 # Priority: ARGV[0] > NUM_FILES env var > default of 1
-count_to_process = ENV.fetch('NUM_FILES', '1').to_i
+count_to_process = NUM_FILES
 first_arg = ARGV[0]
 if first_arg && first_arg.match?(/^\d+$/)
   count_to_process = first_arg.to_i

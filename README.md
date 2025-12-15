@@ -2,6 +2,8 @@
 
 Automated Docker container that finds and re-encodes your largest video files to H.265/HEVC. Designed for Unraid but works anywhere Docker runs.
 
+Very much written with AI.
+
 ## Features
 
 - **Autonomous operation** - Set it and forget it. Replaces originals by default with built-in safety checks
