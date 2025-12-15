@@ -1,0 +1,32 @@
+# Test files and videos
+test-videos/
+test-suite-runs/
+test-suite-videos/
+*.mp4
+*.mkv
+*.avi
+*.wmv
+*.mov
+*.flv
+*.m4v
+
+# Cache and temporary files
+filesize_cache.json
+*.tmp
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker build cache
+.dockerignore
+

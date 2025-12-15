@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>H265-Video-Reencoder</Name>
+  <Repository>rsheldiii/h265-reencoder:latest</Repository>
+  <Registry>https://hub.docker.com/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/rsheldiii/h265-reencoder</Support>
+  <Project>https://github.com/rsheldiii/h265-reencoder</Project>
+  <Overview>Automated H.265/HEVC video re-encoding container with smart safety features. Scans directories for the largest videos and re-encodes them to H.265. Features: automatic file replacement with safety checks (requires 10% minimum size reduction), persistent logging, caching, and optional NVIDIA GPU acceleration. Designed for safe, autonomous operation.</Overview>
+  <Category>MediaApp:Video Status:Stable</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/rsheldiii/h265-reencoder/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/rsheldiii/h265-reencoder/main/icon.png</Icon>
+  <ExtraParams>--runtime=nvidia</ExtraParams>
+  <PostArgs></PostArgs>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>Automated H.265/HEVC video re-encoding container with intelligent safety features.&#xD;
+&#xD;
+**Default Behavior:**&#xD;
+- Processes videos and REPLACES originals (saves disk space)&#xD;
+- Safety check: Only replaces if new file is at least 10% smaller&#xD;
+- If size reduction is insufficient, keeps both files&#xD;
+- All actions logged to h265_encoder.log in your video directory&#xD;
+&#xD;
+**Configuration:**&#xD;
+- Use "Number of Files to Process" to control batch size&#xD;
+- GPU acceleration is OFF by default (enable in settings)&#xD;
+- Adjust "Min Size Reduction" to change safety threshold (default: 10%)&#xD;
+&#xD;
+**Advanced Post Arguments Options:**&#xD;
+- Keep originals: `--no-replace` (creates separate _h265.mp4 files)&#xD;
+- Force rescan: `--rescan`&#xD;
+- Test mode: `--dryrun`&#xD;
+- Override file count: `5` (processes 5 videos)&#xD;
+&#xD;
+To change Post Arguments: Edit container > Show advanced settings > Post Arguments</Description>
+  <Requires/>
+  <Config Name="Video Directory" Target="/videos" Default="/mnt/user/videos" Mode="rw" Description="Path to your video files. The container will scan this directory and re-encode the largest videos." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/videos</Config>
+  <Config Name="CRF Value" Target="CRF_VALUE" Default="20" Mode="" Description="H.265 encoding quality. Lower values = higher quality (and larger file size). Range: 0-51. Recommended: 18-28." Type="Variable" Display="always" Required="false" Mask="false">20</Config>
+  <Config Name="Encoding Preset" Target="PRESET" Default="medium" Mode="" Description="Encoding speed preset. Options: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow. Slower = better compression." Type="Variable" Display="always" Required="false" Mask="false">medium</Config>
+  <Config Name="Target Directory" Target="TARGET_DIRECTORY" Default="/videos" Mode="" Description="Directory path inside container to scan (usually leave as /videos unless you have multiple volume mounts)." Type="Variable" Display="advanced" Required="false" Mask="false">/videos</Config>
+  <Config Name="Video Extensions" Target="VIDEO_EXTENSIONS" Default=".mp4,.mkv,.avi,.wmv,.mov,.flv,.m4v" Mode="" Description="Comma-separated list of video file extensions to search for." Type="Variable" Display="advanced" Required="false" Mask="false">.mp4,.mkv,.avi,.wmv,.mov,.flv,.m4v</Config>
+  <Config Name="Cache File Path" Target="CACHE_FILE" Default="/videos/filesize_cache.json" Mode="" Description="Path to the cache file (stores information about scanned videos). Recommended to keep in /videos for persistence." Type="Variable" Display="advanced" Required="false" Mask="false">/videos/filesize_cache.json</Config>
+  <Config Name="Number of Files to Process" Target="NUM_FILES" Default="1" Mode="" Description="Number of video files to re-encode in one run. Set to 1 to process one video at a time, or higher to batch process multiple videos." Type="Variable" Display="always" Required="false" Mask="false">1</Config>
+  <Config Name="Use GPU Acceleration" Target="USE_GPU" Default="false" Mode="" Description="Enable NVIDIA GPU hardware acceleration (NVENC). Set to 'true' to use GPU (much faster), 'false' for CPU encoding. Requires Nvidia-Driver plugin installed on Unraid." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="Log File Path" Target="LOG_FILE" Default="/videos/h265_encoder.log" Mode="" Description="Path to the log file (stores all encoding history). View from inside container or via Unraid share at your video directory." Type="Variable" Display="advanced" Required="false" Mask="false">/videos/h265_encoder.log</Config>
+  <Config Name="Min Size Reduction" Target="MIN_SIZE_REDUCTION" Default="10" Mode="" Description="Minimum file size reduction percentage required to replace original file (safety feature). If reduction is less than this value, original file will be preserved. Range: 0-100. Recommended: 10." Type="Variable" Display="advanced" Required="false" Mask="false">10</Config>
+</Container>
+

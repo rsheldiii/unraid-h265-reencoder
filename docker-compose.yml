@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  h265-reencoder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: h265-video-reencoder
+    
+    # Environment variables - customize as needed
+    environment:
+      - CRF_VALUE=20
+      - PRESET=medium
+      - TARGET_DIRECTORY=/videos
+      - VIDEO_EXTENSIONS=.mp4,.mkv,.avi,.wmv,.mov,.flv,.m4v
+      - CACHE_FILE=/videos/filesize_cache.json
+      - LOG_FILE=/videos/h265_encoder.log
+      - MIN_SIZE_REDUCTION=10
+    
+    # Volume mapping - mount your video directory
+    volumes:
+      - ./test-videos:/videos
+    
+    # Pass arguments to the script
+    # Default: processes 1 video and replaces original (with safety checks)
+    # Override with: docker-compose run h265-reencoder 5 --rescan
+    # Use --no-replace to keep originals
+    command: ["1"]
+    
+    # Container exits when script completes
+    restart: "no"
+    
+    # Optional: Limit CPU/memory usage
+    # cpus: '4.0'
+    # mem_limit: 4g
+
+# Example usage commands:
+# Build: docker-compose build
+# Run default (1 video, replaces original): docker-compose up
+# Process 3 videos: docker-compose run --rm h265-reencoder 3
+# Keep originals: docker-compose run --rm h265-reencoder 3 --no-replace
+# Dry run: docker-compose run --rm h265-reencoder 1 --dryrun
+# Force rescan: docker-compose run --rm h265-reencoder 1 --rescan
+
