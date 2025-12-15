@@ -7,13 +7,13 @@
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/rsheldiii/h265-reencoder</Support>
-  <Project>https://github.com/rsheldiii/h265-reencoder</Project>
+  <Support>https://github.com/rsheldiii/unraid-h265-reencoder</Support>
+  <Project>https://github.com/rsheldiii/unraid-h265-reencoder</Project>
   <Overview>Automated H.265/HEVC video re-encoding container with smart safety features. Scans directories for the largest videos and re-encodes them to H.265. Features: automatic file replacement with safety checks (requires 10% minimum size reduction), persistent logging, caching, and optional NVIDIA GPU acceleration. Designed for safe, autonomous operation.</Overview>
   <Category>MediaApp:Video Status:Stable</Category>
   <WebUI/>
-  <TemplateURL>https://raw.githubusercontent.com/rsheldiii/h265-reencoder/main/unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/rsheldiii/h265-reencoder/main/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/rsheldiii/unraid-h265-reencoder/main/unraid-template.xml</TemplateURL>
+  <!-- <Icon>https://raw.githubusercontent.com/rsheldiii/unraid-h265-reencoder/main/icon.png</Icon> -->
   <ExtraParams>--runtime=nvidia</ExtraParams>
   <PostArgs></PostArgs>
   <CPUset/>
