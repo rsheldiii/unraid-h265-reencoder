@@ -41,8 +41,6 @@ USE_GPU = ENV.fetch('USE_GPU', 'false').downcase == 'true'
 # Log file path
 LOG_FILE = ENV.fetch('LOG_FILE', '/videos/h265_encoder.log')
 
-NUM_FILES = Float::INFINITY # ENV.fetch('NUM_FILES', '10').to_i
-
 # Create a multi-output logger (logs to both STDOUT and file)
 log_file_writer = File.open(LOG_FILE, 'a')
 log_file_writer.sync = true  # Ensure immediate writes
@@ -226,11 +224,6 @@ unless command_exists?('ffmpeg')
 end
 
 # 2. Parse arguments
-# Check if the first argument is a number (count of videos to process)
-# Priority: ARGV[0] > NUM_FILES env var > default of 1
-count_to_process = NUM_FILES
-count_to_process = 1 if count_to_process < 1 # Ensure at least 1
-
 # Replace original is now the DEFAULT behavior
 # Use --no-replace flag to keep original file
 replace_original = !ARGV.include?(NO_REPLACE_FLAG)
@@ -247,7 +240,7 @@ if dryrun
   $logger.info "⚠️  DRY RUN MODE - No actual encoding will be performed"
 end
 $logger.info "📊 Configuration:"
-$logger.info "   - Videos to process: #{count_to_process}"
+$logger.info "   - Mode: Continuous (until no files remain)"
 $logger.info "   - Replace originals: #{replace_original ? 'YES' : 'NO'}"
 $logger.info "   - CRF Value: #{CRF_VALUE}"
 $logger.info "   - Preset: #{PRESET}"
@@ -258,11 +251,13 @@ $logger.info ""
 file_cache = load_cache(CACHE_FILE)
 processed_count = 0
 failed_count = 0
+video_number = 0
 
-(0...Float::INFINITY).each do |iteration|
+loop do
+  video_number += 1
   $logger.info ""
   $logger.info "╔═══════════════════════════════════════════════════════════════════╗"
-  $logger.info "║  📹 Processing Video #{iteration + 1} of #{count_to_process}".ljust(68) + "║"
+  $logger.info "║  📹 Processing Video ##{video_number}".ljust(68) + "║"
   $logger.info "╚═══════════════════════════════════════════════════════════════════╝"
   $logger.info ""
   
@@ -500,7 +495,7 @@ failed_count = 0
           file_cache.delete(largest_video)
           $logger.info "   ✓ New file saved: #{File.basename(output_path)}"
           $logger.info "   ✓ Original preserved: #{File.basename(largest_video)}"
-          open_in_explorer(dirname) if iteration == 0 # Only open explorer for first video
+          open_in_explorer(dirname) if video_number == 1 # Only open explorer for first video
         end
       end
     elsif dryrun
@@ -529,7 +524,7 @@ failed_count = 0
     
     processed_count += 1
     $logger.info ""
-    $logger.info "✅ Video #{iteration + 1} processing complete!"
+    $logger.info "✅ Video ##{video_number} processing complete!"
     $logger.info ""
     
     unless dryrun
@@ -570,7 +565,7 @@ failed_count = 0
     next
   end
   
-  # After first iteration, don't force rescan anymore
+  # After first video, don't force rescan anymore
   force_rescan = false
 end
 
