@@ -5,6 +5,7 @@ require 'fileutils'
 require 'rbconfig'
 require 'json'
 require 'logger'
+require 'open3'
 
 # --- Configuration ---
 # List of video file extensions to search for. Case-insensitive.
@@ -40,7 +41,7 @@ USE_GPU = ENV.fetch('USE_GPU', 'false').downcase == 'true'
 # Log file path
 LOG_FILE = ENV.fetch('LOG_FILE', '/videos/h265_encoder.log')
 
-NUM_FILES = ENV.fetch('NUM_FILES', '1').to_i
+NUM_FILES = Float::INFINITY # ENV.fetch('NUM_FILES', '10').to_i
 
 # Create a multi-output logger (logs to both STDOUT and file)
 log_file_writer = File.open(LOG_FILE, 'a')
@@ -228,10 +229,6 @@ end
 # Check if the first argument is a number (count of videos to process)
 # Priority: ARGV[0] > NUM_FILES env var > default of 1
 count_to_process = NUM_FILES
-first_arg = ARGV[0]
-if first_arg && first_arg.match?(/^\d+$/)
-  count_to_process = first_arg.to_i
-end
 count_to_process = 1 if count_to_process < 1 # Ensure at least 1
 
 # Replace original is now the DEFAULT behavior
@@ -260,8 +257,9 @@ $logger.info ""
 # 3. Load cache and process videos
 file_cache = load_cache(CACHE_FILE)
 processed_count = 0
+failed_count = 0
 
-count_to_process.times do |iteration|
+(0...Float::INFINITY).each do |iteration|
   $logger.info ""
   $logger.info "╔═══════════════════════════════════════════════════════════════════╗"
   $logger.info "║  📹 Processing Video #{iteration + 1} of #{count_to_process}".ljust(68) + "║"
@@ -385,6 +383,7 @@ count_to_process.times do |iteration|
     $logger.info ""
     $logger.info "   [DRY RUN] Simulating successful encoding..."
     success = true
+    ffmpeg_stderr = ""
   else
     $logger.info "   This may take a long time depending on video size and settings."
     $logger.info ""
@@ -392,7 +391,36 @@ count_to_process.times do |iteration|
     $logger.info ""
     $logger.info "   ⏳ Encoding in progress..."
     $logger.info ""
-    success = system(command)
+    
+    # Use Open3 to capture stderr where FFmpeg outputs errors
+    # We use popen3 to stream output in real-time while also capturing it
+    ffmpeg_stdout = ""
+    ffmpeg_stderr = ""
+    
+    Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+      stdin.close
+      
+      # Read stdout and stderr in separate threads to avoid deadlocks
+      stdout_thread = Thread.new do
+        while line = stdout.gets
+          print line  # Show in terminal
+          ffmpeg_stdout << line
+        end
+      end
+      
+      stderr_thread = Thread.new do
+        while line = stderr.gets
+          print line  # Show in terminal (FFmpeg progress goes to stderr)
+          ffmpeg_stderr << line
+        end
+      end
+      
+      stdout_thread.join
+      stderr_thread.join
+      
+      success = wait_thr.value.success?
+    end
+    
     $logger.info ""
   end
   
@@ -510,10 +538,36 @@ count_to_process.times do |iteration|
   else
     $logger.error ""
     $logger.error "❌ Encoding failed for: #{File.basename(largest_video)}"
-    $logger.error "   Please check the ffmpeg output above for errors."
     $logger.error ""
-    save_cache(CACHE_FILE, file_cache) # Save cache even on failure
-    exit 1
+    
+    # Log the FFmpeg error output
+    if ffmpeg_stderr && !ffmpeg_stderr.strip.empty?
+      $logger.error "📋 FFmpeg error output:"
+      ffmpeg_stderr.lines.last(50).each do |line|  # Log last 50 lines of stderr
+        $logger.error "   #{line.chomp}"
+      end
+      $logger.error ""
+    else
+      $logger.error "   No FFmpeg error output captured."
+      $logger.error ""
+    end
+    
+    # Remove failed video from cache so it won't be selected again
+    $logger.info "🗑️  Removing failed video from cache to prevent re-selection..."
+    file_cache.delete(largest_video)
+    save_cache(CACHE_FILE, file_cache)
+    $logger.info "   ✓ Video removed from cache: #{File.basename(largest_video)}"
+    $logger.info ""
+    
+    # Clean up temp file if it exists
+    File.delete(temp_output_path) if File.exist?(temp_output_path)
+    
+    failed_count += 1
+    
+    # Continue to next video instead of exiting
+    $logger.info "⏭️  Continuing to next video..."
+    $logger.info ""
+    next
   end
   
   # After first iteration, don't force rescan anymore
@@ -536,6 +590,9 @@ else
   $logger.info "║                    🎉 ENCODING COMPLETE                           ║"
   $logger.info "╠═══════════════════════════════════════════════════════════════════╣"
   $logger.info "║  Videos processed: #{processed_count.to_s.rjust(3)}".ljust(68) + "║"
+  if failed_count > 0
+    $logger.info "║  Videos failed:    #{failed_count.to_s.rjust(3)} (removed from cache)".ljust(68) + "║"
+  end
   $logger.info "║  Cache updated                                                    ║"
   $logger.info "║  Log saved to: #{File.basename(LOG_FILE)}".ljust(68) + "║"
 end
