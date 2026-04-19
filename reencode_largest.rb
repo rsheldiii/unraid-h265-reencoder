@@ -200,6 +200,29 @@ def get_video_codec(file_path)
   return codec.empty? ? nil : codec
 end
 
+# Truncates a filename to fit within filesystem byte limits (typically 255 bytes).
+# Preserves the final extension and trims the base name, handling multi-byte characters safely.
+def safe_filename(desired_name, max_name_bytes = 255)
+  return desired_name if desired_name.bytesize <= max_name_bytes
+
+  ext = File.extname(desired_name)
+  base = desired_name.chomp(ext)
+
+  if ext.bytesize >= max_name_bytes
+    require 'digest'
+    return Digest::MD5.hexdigest(desired_name)
+  end
+
+  target = max_name_bytes - ext.bytesize
+  while base.bytesize > target && base.length > 1
+    base = base[0...-1]
+  end
+
+  truncated = "#{base}#{ext}"
+  $logger.warn "   ⚠️  Filename too long (#{desired_name.bytesize} bytes). Truncated to #{truncated.bytesize} bytes."
+  truncated
+end
+
 # Opens the given path in the system's default file explorer.
 def open_in_explorer(path)
   absolute_path = File.expand_path(path)
@@ -306,8 +329,8 @@ loop do
   # 5. Construct and run the ffmpeg command
   dirname = File.dirname(largest_video)
   basename = File.basename(largest_video, '.*')
-  output_path = File.join(dirname, "#{basename}_h265.mp4")
-  temp_output_path = "#{output_path}.tmp"
+  output_path = File.join(dirname, safe_filename("#{basename}_h265.mp4"))
+  temp_output_path = File.join(dirname, safe_filename("#{File.basename(output_path)}.tmp"))
 
   at_exit { File.delete(temp_output_path) if File.exist?(temp_output_path) }
 
@@ -468,7 +491,7 @@ loop do
           original_path = largest_video.dup
           
           # Extra safety: backup the original temporarily
-          backup_path = "#{original_path}.backup_#{Time.now.to_i}"
+          backup_path = File.join(File.dirname(original_path), safe_filename("#{File.basename(original_path)}.backup_#{Time.now.to_i}"))
           File.rename(original_path, backup_path)
           
           begin
